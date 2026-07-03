@@ -90,4 +90,163 @@
         .modal-body { margin-bottom: 25px; font-size: 0.9rem; line-height: 1.6; color: #ccc; }
         .modal-input, .modal-select {
             width: 100%; background: #000; border: 1px solid #444; color: var(--primary);
-            padding: 10px; border-radius: 4px; font-family: inherit; font-size: 0.
+            padding: 10px; border-radius: 4px; font-family: inherit; font-size: 0.9rem; outline: none; margin-top: 10px; transition: border-color 0.3s;
+        }
+        .modal-input:focus, .modal-select:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); }
+        .modal-footer { display: flex; justify-content: flex-end; }
+        .modal-btn {
+            background: transparent; border: 1px solid var(--primary); color: var(--primary);
+            padding: 8px 20px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: all 0.3s;
+        }
+        .modal-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0, 243, 255, 0.4); }
+        .wechat-highlight { color: #07c160; font-weight: bold; font-size: 1.1rem; text-shadow: 0 0 8px rgba(7, 193, 96, 0.4); user-select: all; }
+        .env-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .env-tag { padding: 6px 12px; border: 1px solid #444; border-radius: 4px; font-size: 0.8rem; color: #aaa; cursor: pointer; transition: all 0.2s; }
+        .env-tag:hover { border-color: var(--secondary); color: #fff; }
+        .env-tag.selected { background: var(--secondary); border-color: var(--secondary); color: #fff; box-shadow: 0 0 10px rgba(188, 19, 254, 0.4); }
+        .brick-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .brick-option { padding: 20px; border: 1px solid #444; border-radius: 6px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .brick-option:hover { border-color: var(--danger); color: #fff; }
+        .brick-option.selected { border-color: var(--danger); background: rgba(255, 42, 42, 0.1); color: #fff; box-shadow: 0 0 15px rgba(255, 42, 42, 0.3); }
+        .brick-option .bo-icon { font-size: 1.5rem; margin-bottom: 8px; display: block; }
+        .brick-option .bo-label { font-size: 0.9rem; font-weight: bold; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="terminal-container">
+    <h1>CYBER<span style="color:#fff">FLASH</span></h1>
+    <div class="sub-title">SYSTEM KERNEL v4.0.2 // SECURE BOOT BYPASSED</div>
+    <div class="options-grid">
+        <div class="option-card" onclick="handleAction('unlock')"><span class="icon">🔓</span><div class="label">解锁 BL</div><div class="desc">Bootloader Unlock Sequence</div></div>
+        <div class="option-card" onclick="handleAction('root')"><span class="icon">👑</span><div class="label">Root 权限</div><div class="desc">Kernel SU / Magisk Inject</div></div>
+        <div class="option-card" onclick="handleAction('env')"><span class="icon">🛡️</span><div class="label">过环境检测</div><div class="desc">Shamiko / Zygisk Bypass</div></div>
+        <div class="option-card danger" onclick="handleAction('brick')"><span class="icon">🧱</span><div class="label">救砖模式</div><div class="desc">EDL / Fastboot Recovery</div></div>
+    </div>
+    <div class="status-bar">
+        <span><span class="blink">●</span> DEVICE CONNECTED: POCO F5</span>
+        <span>BATTERY: 87% | TEMP: 34°C</span>
+    </div>
+</div>
+
+<!-- 弹窗容器 -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box" id="modalBox">
+        <div class="modal-header"><span class="modal-title" id="modalTitle">SYSTEM PROMPT</span><span class="modal-close" onclick="closeModal()">&times;</span></div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer" id="modalFooter"></div>
+    </div>
+</div>
+
+<script>
+    const overlay = document.getElementById('modalOverlay');
+    const modalBox = document.getElementById('modalBox');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const modalFooter = document.getElementById('modalFooter');
+
+    function openModal() { overlay.classList.add('show'); }
+    function closeModal() { overlay.classList.remove('show'); }
+
+    function handleAction(type) {
+        document.querySelectorAll('.option-card').forEach(c => c.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        if (type === 'unlock') showUnlockModal();
+        else if (type === 'root') showRootModal();
+        else if (type === 'env') showEnvModal();
+        else if (type === 'brick') showBrickModal();
+    }
+
+    // 1. 解锁BL
+    function showUnlockModal() {
+        modalBox.classList.remove('danger-theme');
+        modalTitle.textContent = '> BL_UNLOCK_REQUEST';
+        modalBody.innerHTML = `<div>请输入你的设备型号：</div><input type="text" class="modal-input" id="deviceInput" placeholder="例如: POCO F5 / Redmi K60" autofocus>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="confirmDevice()">确 认</button>`;
+        openModal(); 
+        setTimeout(() => document.getElementById('deviceInput').focus(), 100);
+    }
+    function confirmDevice() {
+        const device = document.getElementById('deviceInput').value.trim();
+        if (!device) { document.getElementById('deviceInput').style.borderColor = 'var(--danger)'; return; }
+        modalTitle.textContent = '> UNLOCK_AUTHORIZATION';
+        modalBody.innerHTML = `<div>设备 [<span style="color:#fff">${device}</span>] 已验证。</div><div style="margin-top:15px;">解锁BL请联系管理员授权：</div><div style="margin-top:10px;">微信联系：<span class="wechat-highlight">hzy896663</span></div>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="closeModal()">关 闭</button>`;
+    }
+
+    // 2. Root权限
+    function showRootModal() {
+        modalBox.classList.remove('danger-theme');
+        modalTitle.textContent = '> ROOT_INJECT_REQUEST';
+        modalBody.innerHTML = `<div>您想刷入的面具是？</div><select class="modal-select" id="maskSelect"><option value="magisk">Magisk (Classic)</option><option value="kernelsu">KernelSU</option><option value="apatch">APatch</option></select>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="confirmRoot()">确 定</button>`;
+        openModal();
+    }
+    function confirmRoot() {
+        const selectedMask = document.getElementById('maskSelect');
+        const maskName = selectedMask.options[selectedMask.selectedIndex].text;
+        modalTitle.textContent = '> ROOT_AUTHORIZATION';
+        modalBody.innerHTML = `<div>已选择刷入: [<span style="color:#fff">${maskName}</span>]</div><div style="margin-top:15px;">获取Root权限请联系管理员：</div><div style="margin-top:10px;">微信联系：<span class="wechat-highlight">hzy896663</span></div>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="closeModal()">关 闭</button>`;
+    }
+
+    // 3. 过环境检测
+    function showEnvModal() {
+        modalBox.classList.remove('danger-theme');
+        modalTitle.textContent = '> ENV_BYPASS_REQUEST';
+        modalBody.innerHTML = `<div>请选择需要绕过/隐藏的环境：</div><div class="env-tags"><div class="env-tag" onclick="toggleTag(this)">Luna</div><div class="env-tag" onclick="toggleTag(this)">Momo</div><div class="env-tag" onclick="toggleTag(this)">牛头32</div><div class="env-tag" onclick="toggleTag(this)">Hunter</div><div class="env-tag" onclick="toggleTag(this)">春秋</div><div class="env-tag" onclick="toggleTag(this)">隐藏BL</div></div>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="confirmEnv()">确 定</button>`;
+        openModal();
+    }
+    function toggleTag(el) { el.classList.toggle('selected'); }
+    function confirmEnv() {
+        const selected = Array.from(document.querySelectorAll('.env-tag.selected')).map(t => t.textContent);
+        if (selected.length === 0) { 
+            document.querySelector('.env-tags').style.animation = 'none'; 
+            setTimeout(() => document.querySelector('.env-tags').style.animation = 'shake 0.4s ease', 10); 
+            return; 
+        }
+        modalTitle.textContent = '> ENV_BYPASS_AUTH';
+        modalBody.innerHTML = `<div>已选择绕过环境：</div><div style="margin:10px 0; color:#fff; font-weight:bold;">${selected.join(' / ')}</div><div style="margin-top:15px;">获取过环境方案请联系：</div><div style="margin-top:10px;">微信联系：<span class="wechat-highlight">hzy896663</span></div>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="closeModal()">关 闭</button>`;
+    }
+
+    // 4. 救砖模式
+    function showBrickModal() {
+        modalBox.classList.add('danger-theme');
+        modalTitle.textContent = '> BRICK_RECOVERY_REQUEST';
+        modalBody.innerHTML = `<div>请选择救砖方式：</div><div class="brick-options"><div class="brick-option" onclick="selectBrick(this, 'EDL 9008')"><span class="bo-icon">🔌</span><div class="bo-label">EDL 9008</div></div><div class="brick-option" onclick="selectBrick(this, 'Fastboot')"><span class="bo-icon">⚡</span><div class="bo-label">Fastboot</div></div></div>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="confirmBrick()">确 定</button>`;
+        openModal();
+    }
+    function selectBrick(el, mode) {
+        document.querySelectorAll('.brick-option').forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected'); 
+        el.dataset.mode = mode;
+    }
+    function confirmBrick() {
+        const selectedEl = document.querySelector('.brick-option.selected');
+        if (!selectedEl) { 
+            document.querySelector('.brick-options').style.animation = 'none'; 
+            setTimeout(() => document.querySelector('.brick-options').style.animation = 'shake 0.4s ease', 10); 
+            return; 
+        }
+        const mode = selectedEl.dataset.mode;
+        modalTitle.textContent = '> BRICK_RECOVERY_AUTH';
+        modalBody.innerHTML = `<div>已选择救砖方式: [<span style="color:#fff">${mode}</span>]</div><div style="margin-top:15px;">获取救砖工具请联系：</div><div style="margin-top:10px;">微信联系：<span class="wechat-highlight">hzy896663</span></div>`;
+        modalFooter.innerHTML = `<button class="modal-btn" onclick="closeModal()">关 闭</button>`;
+    }
+
+    // 全局事件监听
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('show')) closeModal();
+        if (!overlay.classList.contains('show')) { 
+            const map = { '1': 0, '2': 1, '3': 2, '4': 3 }; 
+            if (map[e.key] !== undefined) document.querySelectorAll('.option-card')[map[e.key]].click(); 
+        }
+    });
+</script>
+</body>
+</html>
